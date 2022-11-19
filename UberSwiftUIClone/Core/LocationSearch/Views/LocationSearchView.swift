@@ -16,17 +16,7 @@ struct LocationSearchView: View {
     VStack(spacing: 0) {
       // header view
       HStack {
-        VStack {
-          Circle()
-            .fill(Color(.systemGray3))
-            .frame(width: 6, height: 6)
-          Rectangle()
-            .fill(Color(.systemGray3))
-            .frame(width: 1, height: 24)
-          Rectangle()
-            .fill(.black)
-            .frame(width: 6, height: 6)
-        }
+        TimelineView(isLarge: false)
 
         VStack {
           TextField("Current location", text: $startLocationText)
@@ -52,8 +42,10 @@ struct LocationSearchView: View {
           ForEach(viewModel.results, id: \.self) { result in
             LocationSearchResultCell(title: result.title, subtitle: result.subtitle)
               .onTapGesture {
-                viewModel.selectLocation(result)
-                mapState = .locationSelected
+                withAnimation(.spring()) {
+                  viewModel.selectLocation(result)
+                  mapState = .locationSelected
+                }
               }
           }
         }
@@ -65,8 +57,8 @@ struct LocationSearchView: View {
 }
 
 /* struct LocationSearchView_Previews: PreviewProvider {
- static var previews: some View {
- LocationSearchView(showLocationSearchView: .constant(false))
- }
+   static var previews: some View {
+     LocationSearchView(startLocationText: <#T##arg#>, mapState: <#T##MapViewState#>, viewModel: <#T##LocationSearchViewModel#>)
+   }
  }
  */
