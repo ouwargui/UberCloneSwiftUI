@@ -20,11 +20,13 @@ struct LocationSearchView: View {
 
         VStack {
           TextField("Current location", text: $startLocationText)
+            .padding(.horizontal, 10)
             .frame(height: 32)
             .background(Color(.systemGroupedBackground))
             .padding(.trailing)
 
           TextField("Where to?", text: $viewModel.queryFragment)
+            .padding(.horizontal, 10)
             .frame(height: 32)
             .background(Color(.systemGray4))
             .padding(.trailing)
@@ -57,9 +59,8 @@ struct LocationSearchView: View {
   }
 }
 
-/* struct LocationSearchView_Previews: PreviewProvider {
-   static var previews: some View {
-     LocationSearchView(startLocationText: <#T##arg#>, mapState: <#T##MapViewState#>, viewModel: <#T##LocationSearchViewModel#>)
-   }
- }
- */
+struct LocationSearchView_Previews: PreviewProvider {
+  static var previews: some View {
+    LocationSearchView(mapState: .constant(.searchingForLocation)).environmentObject(LocationSearchViewModel())
+  }
+}
