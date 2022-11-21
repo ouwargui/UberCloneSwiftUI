@@ -10,7 +10,7 @@ import SwiftUI
 
 struct UberMapViewRepresentable: UIViewRepresentable {
   let mapView = MKMapView()
-  let locationManager = LocationManager()
+  let locationManager = LocationManager.shared
   @EnvironmentObject var locationSearchViewModel: LocationSearchViewModel
   @Binding var mapState: MapViewState
 
@@ -18,7 +18,7 @@ struct UberMapViewRepresentable: UIViewRepresentable {
     mapView.delegate = context.coordinator
     mapView.isRotateEnabled = false
     mapView.showsUserLocation = true
-    mapView.userTrackingMode = .follow
+    mapView.userTrackingMode = .none
 
     return mapView
   }
@@ -30,11 +30,13 @@ struct UberMapViewRepresentable: UIViewRepresentable {
     case .noInput:
       context.coordinator.clearMapViewAndRecenterOnUserLocation()
     case .locationSelected:
-      if let coordinates = locationSearchViewModel.selectedLocationCoordinate {
+      if let coordinates = locationSearchViewModel.selectedUberLocation?.coordinate {
         context.coordinator.addAndSelectAnnotation(withCoordinate: coordinates)
         context.coordinator.configurePolyline(withDestinationCoordinate: coordinates)
       }
     case .searchingForLocation:
+      break
+    case .polylineAdded:
       break
     }
   }
@@ -49,6 +51,7 @@ extension UberMapViewRepresentable {
     let parent: UberMapViewRepresentable
     var userLocationCoordinate: CLLocationCoordinate2D?
     var currentRegion: MKCoordinateRegion?
+    var isFirstRender = true
 
     init(parent: UberMapViewRepresentable) {
       self.parent = parent
@@ -64,7 +67,10 @@ extension UberMapViewRepresentable {
 
       currentRegion = region
 
-      parent.mapView.setRegion(region, animated: true)
+      if isFirstRender {
+        parent.mapView.setRegion(region, animated: true)
+        isFirstRender = false
+      }
     }
 
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -85,32 +91,15 @@ extension UberMapViewRepresentable {
 
     func configurePolyline(withDestinationCoordinate coordinate: CLLocationCoordinate2D) {
       guard let userLocationCoordinate = userLocationCoordinate else { return }
-      getDestinationRoute(from: userLocationCoordinate, to: coordinate) { route in
+
+      parent.locationSearchViewModel.getDestinationRoute(from: userLocationCoordinate, to: coordinate) { route in
         self.parent.mapView.addOverlay(route.polyline, level: .aboveLabels)
+        self.parent.mapState = .polylineAdded
         let rect = self.parent.mapView.mapRectThatFits(
           route.polyline.boundingMapRect,
           edgePadding: .init(top: 64, left: 32, bottom: 500, right: 32)
         )
         self.parent.mapView.setRegion(MKCoordinateRegion(rect), animated: true)
-      }
-    }
-
-    func getDestinationRoute(from userLocation: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, completion: @escaping (MKRoute) -> Void) {
-      let userPlacemark = MKPlacemark(coordinate: userLocation)
-      let destinationPlacemark = MKPlacemark(coordinate: destination)
-      let request = MKDirections.Request()
-      request.source = MKMapItem(placemark: userPlacemark)
-      request.destination = MKMapItem(placemark: destinationPlacemark)
-      let directions = MKDirections(request: request)
-
-      directions.calculate { response, error in
-        if let error = error {
-          print("DEBUG: Failed to get directions with error \(error.localizedDescription)")
-          return
-        }
-
-        guard let route = response?.routes.first else { return }
-        completion(route)
       }
     }
 
