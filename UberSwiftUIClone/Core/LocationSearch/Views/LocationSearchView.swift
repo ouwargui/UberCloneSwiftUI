@@ -52,6 +52,7 @@ struct LocationSearchView: View {
         .padding(.top)
       }
     }
+    .background(Color.theme.backgroundColor)
     .background(.white)
   }
 }
